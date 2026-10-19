@@ -4,6 +4,7 @@ import type { ImageRef } from '../types/editor';
 import { MAX_SLEEVE_ROWS, type PegiRating, type SleeveCopy, type SleeveRow } from '../types/sleeve';
 import { resolveImageRef } from './imageLibrary';
 import { paintRect } from '../templates/geometry';
+import type { RectMm } from './box';
 
 /**
  * The PC GamePak sleeve: the cartridge template's Branded layout, drawn in the style of a classic PC big box. The
@@ -340,7 +341,7 @@ function drawSpine(pen: Pen, t: TemplateConfig, p: PanelRect, s: SleeveCopy) {
   }
 }
 
-function drawBack(pen: Pen, t: TemplateConfig, p: PanelRect, s: SleeveCopy, image: (r: ImageRef | null) => Img | null) {
+function drawBack(pen: Pen, t: TemplateConfig, p: PanelRect, s: SleeveCopy, image: (r: ImageRef | null) => Img | null, code: RectMm | null) {
   const { ctx, px } = pen;
   const a = paintRect(t, p);
   // A dark scrim over whatever the back shows, so the words read: the art becomes a backdrop.
@@ -372,14 +373,18 @@ function drawBack(pen: Pen, t: TemplateConfig, p: PanelRect, s: SleeveCopy, imag
   if (s.blurb) y += 1.4;
   ctx.restore();
 
-  // Footer, from the bottom up: small print, then the badges and logos, then a colour rule and the features line.
+  // Footer, from the bottom up: small print (beside the barcode when there is one), then the badges and logos, then a
+  // colour rule and the features line.
+  const legalX = code ? code.xMm + code.widthMm + 1.9 : x0;
+  const legalW = x0 + w - legalX;
   ctx.save();
   ctx.font = font(1.45, px, TEXT_FONT, 500);
-  const legal = lines(pen, s.legal, w);
+  const legal = lines(pen, s.legal, legalW);
   ctx.restore();
   const legalTop = bottom - legal.length * 1.55;
   const rowH = 9.5;
-  const footTop = legalTop - (legal.length ? 1.2 : 0) - rowH;
+  const lowest = code ? Math.min(code.yMm, legalTop) : legalTop;
+  const footTop = lowest - (legal.length || code ? 1.2 : 0) - rowH;
   const ruleH = 3;
   const ruleTop = footTop - 1.5 - ruleH;
   const featTop = ruleTop - 1.3 - 2.3;
@@ -388,7 +393,7 @@ function drawBack(pen: Pen, t: TemplateConfig, p: PanelRect, s: SleeveCopy, imag
   ctx.font = font(1.45, px, TEXT_FONT, 500);
   ctx.fillStyle = '#96a0b4';
   ctx.textBaseline = 'top';
-  legal.forEach((line, i) => ctx.fillText(line, x0 * px, (legalTop + i * 1.55) * px));
+  legal.forEach((line, i) => ctx.fillText(line, legalX * px, (legalTop + i * 1.55) * px));
   ctx.restore();
 
   const badge = pcBadge(pen, x0, footTop, rowH);
@@ -499,8 +504,11 @@ function drawFlap(pen: Pen, p: PanelRect, s: SleeveCopy, image: (r: ImageRef | n
   list.forEach((img, i) => drawImage(pen, img, p.xMm + SAFE_MM + i * (cw + gap), p.yMm + (p.heightMm - ch) / 2, cw, ch, 'contain'));
 }
 
-/** Draws the PC GamePak layout for an item (the cartridge template with Branded on). */
-export function drawGamePak(ctx: CanvasRenderingContext2D, t: TemplateConfig, item: MediaItem, px: number, getImage: Lookup): void {
+/**
+ * Draws the PC GamePak layout for an item (the cartridge template with Branded on). `code` is where the back's barcode
+ * or QR code sits when it is in its automatic spot (see sleeveCodeSlot): the footer makes room for it.
+ */
+export function drawGamePak(ctx: CanvasRenderingContext2D, t: TemplateConfig, item: MediaItem, px: number, getImage: Lookup, code: RectMm | null = null): void {
   if (t.kind !== 'cartridge') return;
   const s = sleeveOf(item);
   const image = (r: ImageRef | null) => (r ? getImage(resolveImageRef(item, r)) : null);
@@ -510,7 +518,7 @@ export function drawGamePak(ctx: CanvasRenderingContext2D, t: TemplateConfig, it
     ctx.save();
     clipTo(pen, t, p);
     if (p.id === 'front') drawFront(pen, p, s, image);
-    else if (p.id === 'back') drawBack(pen, t, p, s, image);
+    else if (p.id === 'back') drawBack(pen, t, p, s, image, code);
     else if (p.id === 'spine' || p.id === 'spineRight') {
       drawSpine(pen, t, p, s);
       if (!p.text) drawSpineLogos(pen, p, s, image);

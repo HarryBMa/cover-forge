@@ -9,7 +9,7 @@ import { BASE_BACKGROUND, PANEL_IDS, resolvePanel, resolveSpine } from './resolv
 import { computePlacement, paintRect } from './placement';
 import { designOf, layeredShared } from './designs';
 import { drawLogo } from './logo';
-import { drawCode } from './code';
+import { drawCode, sleeveCodeSlot } from './code';
 import { drawBorder } from './border';
 import { getBrand } from '../brands';
 import { drawOfficial, spineTitleCase, spineTitleColor, spineTitleScale, spineTitleStartMm } from './official';
@@ -81,7 +81,12 @@ export function renderCover(
   const digital = scene.banner;
   if (digital) drawOfficial(ctx, t, px);
   // The cartridge's Branded layout is the PC GamePak sleeve, filled in from the item's own words and pictures.
-  if (digital && item) drawGamePak(ctx, t, item, px, getImage);
+  if (digital && item && t.kind === 'cartridge') {
+    // An automatic code on the back sits in the sleeve's footer, which makes room for it.
+    const back = t.panels.find((p) => p.id === 'back');
+    const code = back ? resolvePanel(shared, item, 'back', t.kind).code : null;
+    drawGamePak(ctx, t, item, px, getImage, back && code && code.kind !== 'none' && code.box === null ? sleeveCodeSlot(back, code.kind) : null);
+  }
 
   if (item) {
     const chosen = resolveSpine(shared, item);

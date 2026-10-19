@@ -63,11 +63,23 @@ export function computeCodePlacement(t: TemplateConfig, panel: PanelRect, code: 
   const area = paintRect(t, panel);
   const aspect = ASPECT[code.kind];
   if (code.box === undefined) return legacyCodePlacement(area, panel, code, aspect);
-  const box = code.box ? boxRect(panel, code.box) : defaultCodeRect(panel, DEFAULT_WIDTH_MM[code.kind], aspect);
+  const auto = t.kind === 'cartridge' && panel.id === 'back' ? sleeveCodeSlot(panel, code.kind) : defaultCodeRect(panel, DEFAULT_WIDTH_MM[code.kind], aspect);
+  const box = code.box ? boxRect(panel, code.box) : auto;
   const room = intersect(box, safeArea(panel));
   const r = fitInside(room, aspect);
   const fits = room.widthMm > 0 && room.heightMm > 0 && r.widthMm >= MIN_CODE_MM[code.kind];
   return { widthMm: r.widthMm, heightMm: r.heightMm, xMm: r.xMm - area.xMm, yMm: r.yMm - area.yMm, area, fits, box };
+}
+
+/**
+ * Where an automatic code goes on the back of a PC GamePak sleeve: bottom left, in the footer the layout leaves for
+ * it (see gamepak.ts). A barcode at 80 % of its standard width, the smallest GS1 allows; a QR code as tall as that.
+ */
+export function sleeveCodeSlot(panel: PanelRect, kind: Drawable): RectMm {
+  const barcodeW = BOX_W_MM * 0.8;
+  const h = barcodeW / ASPECT.ean13;
+  const w = kind === 'qr' ? h : kind === 'code128' ? h * ASPECT.code128 : barcodeW;
+  return { xMm: panel.xMm + CODE_SAFETY_MM, yMm: panel.yMm + panel.heightMm - CODE_SAFETY_MM - h, widthMm: w, heightMm: h };
 }
 
 /** The kind's standard size, in the panel's bottom-right corner (canvas mm). */

@@ -5,6 +5,8 @@ import { initialState, reducer } from '../context/AppContext';
 import { restoreSession, serializeSession } from '../context/session';
 import { drawGamePak, sleeveImageUrls, sleeveOf, wrapText } from './gamepak';
 import { resolvePanel } from './resolve';
+import { computeCodePlacement, sleeveCodeSlot } from './code';
+import { DEFAULT_CODE } from '../types/editor';
 
 const game: MediaItem = {
   id: 'steam-413150',
@@ -83,6 +85,21 @@ describe('PC GamePak sleeve', () => {
     expect(s.items[0].sleeve).toEqual({ headline: 'TRADE THE CITY', rating: '12' });
     const back = restoreSession(JSON.parse(JSON.stringify(serializeSession(s))), initialState);
     expect(back.items[0].sleeve).toEqual({ headline: 'TRADE THE CITY', rating: '12' });
+  });
+
+  it('gives an added barcode its own spot in the footer: bottom left, at the smallest GS1 size, clear of the safe edge', () => {
+    const t = buildTemplate('cartridge', 'pc-gamepak');
+    const back = t.panels.find((p) => p.id === 'back')!;
+    const pl = computeCodePlacement(t, back, { ...DEFAULT_CODE, kind: 'ean13' })!;
+    expect(pl.fits).toBe(true);
+    expect(pl.area.xMm + pl.xMm).toBeCloseTo(back.xMm + 3);
+    expect(pl.widthMm).toBeCloseTo((37.29 + 3) * 0.8);
+    expect(pl.area.yMm + pl.yMm + pl.heightMm).toBeCloseTo(back.yMm + back.heightMm - 3);
+    // The layout moves the small print beside it rather than under it.
+    const ctx = fakeContext();
+    drawGamePak(ctx, t, { ...game, sleeve: { legal: 'Small print.' } }, 2, () => fakeImage, sleeveCodeSlot(back, 'ean13'));
+    const legal = ctx.calls.find((c) => c.name === 'fillText' && c.args[0] === 'Small print.')!;
+    expect((legal.args[1] as number) / 2).toBeGreaterThan(back.xMm + 3 + pl.widthMm);
   });
 
   it('puts no barcode on a sleeve unless one is added', () => {
