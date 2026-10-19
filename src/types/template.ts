@@ -20,7 +20,7 @@ export interface PanelRect {
   follows?: PanelId;
 }
 
-export type TemplateKind = 'bluray' | 'uhd' | 'dvd' | 'vhs' | 'cd' | 'cassette' | 'floppy' | 'nfc-card' | 'nfc-sticker' | 'nfc-box' | 'vinyl' | 'game-case';
+export type TemplateKind = 'bluray' | 'uhd' | 'dvd' | 'vhs' | 'cd' | 'cassette' | 'floppy' | 'nfc-card' | 'nfc-sticker' | 'nfc-box' | 'vinyl' | 'game-case' | 'cartridge';
 
 /** Which 3D face a panel is mapped onto (BoxGeometry face order). */
 export type BoxFace = '+x' | '-x' | '+y' | '-y' | '+z' | '-z';

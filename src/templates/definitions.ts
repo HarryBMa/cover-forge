@@ -157,6 +157,15 @@ const NFC_WALLET = { w: 58, h: 90 };
 const NFC_STICKER_MM: Record<string, number> = { '25': 25, '30': 30, '35': 35 };
 const NFC_STICKER_NAME: Record<string, string> = { '25': 'NFC Sticker Small', '30': 'NFC Sticker Medium', '35': 'NFC Sticker Large' };
 
+/**
+ * Cartridges a sleeve can be made for. `cart` is the cartridge itself (width × height × thickness, mm) and `play` what
+ * the sleeve adds so it slides on and off; the sleeve's front is cart + play. PC GamePak: a 3D-printed cartridge the
+ * size of a 2.5" drive (69.85 × 100 × 15 mm), which gives a 71.5 × 101 mm front and a 16 mm side.
+ */
+const CARTRIDGE: Record<string, { label: string; cart: [number, number, number]; play: [number, number, number]; notch: number; casing: PreviewMaterial }> = {
+  'pc-gamepak': { label: 'PC GamePak', cart: [69.85, 100, 15], play: [1.65, 1, 1], notch: 9, casing: { color: '#1d1d22', roughness: 0.55 } },
+};
+
 interface TuckBox {
   kind: TemplateKind;
   name: string;
@@ -168,7 +177,12 @@ interface TuckBox {
   casing: PreviewMaterial;
   radiusMm: number;
   marks?: (panels: PanelRect[]) => TemplateMark[];
+  /** A sleeve with no bottom: the far end stays open for the item to slide in (no bottom panel, tuck or dust flaps). */
+  openBottom?: boolean;
 }
+
+/** The panels at a tuck box's bottom end, left off an open sleeve. */
+const BOTTOM_END = new Set<PanelId>(['bottom', 'bottomTuck', 'dustBottomLeft', 'dustBottomRight']);
 
 /**
  * A straight-tuck-end box net. A strip [ back | left side | front | right side | glue tab ] folds into a tube and only
@@ -192,7 +206,8 @@ function tuckBox(b: TuckBox): TemplateConfig {
     pieces: [
       {
         dir: 'free',
-        specs: [
+        specs: (
+          [
           { id: 'back', label: 'Back', w, h, x: 0, y: stripY },
           { id: 'spine', label: 'Side (spine)', w: d, h, x: w, y: stripY, text: 'vertical' },
           { id: 'front', label: 'Front', w, h, x: w + d, y: stripY },
@@ -206,7 +221,8 @@ function tuckBox(b: TuckBox): TemplateConfig {
           { id: 'dustBottomLeft', label: 'Dust flap', w: d - gap, h: dust, x: w, y: stripY + h, follows: 'spine' },
           { id: 'dustTopRight', label: 'Dust flap', w: d - gap, h: dust, x: 2 * w + d + gap, y: stripY - dust, follows: 'spineRight' },
           { id: 'dustBottomRight', label: 'Dust flap', w: d - gap, h: dust, x: 2 * w + d + gap, y: stripY + h, follows: 'spineRight' },
-        ],
+          ] as FreePiece['specs']
+        ).filter((p) => !b.openBottom || !BOTTOM_END.has(p.id)),
       },
     ],
     marks: b.marks,
@@ -215,7 +231,8 @@ function tuckBox(b: TuckBox): TemplateConfig {
       widthMm: w,
       heightMm: h,
       depthMm: d,
-      faces: { '+z': 'front', '-z': 'back', '-x': 'spine', '+x': 'spineRight', '+y': 'top', '-y': 'bottom' },
+      // An open sleeve leaves its bottom face unprinted: the 3D model shows the casing (the item inside) there.
+      faces: { '+z': 'front', '-z': 'back', '-x': 'spine', '+x': 'spineRight', '+y': 'top', ...(!b.openBottom && { '-y': 'bottom' as const }) },
       casing: b.casing,
       glossy: false,
       radiusMm: b.radiusMm,
@@ -388,6 +405,24 @@ export const TEMPLATE_DEFS: TemplateDef[] = [
     // A retail VHS sleeve is card, not plastic, so it is a printable box. The tape stands upright: 105 wide, 190 tall,
     // with the spine (the 25 mm thickness) along the long side.
     build: () => tuckBox({ kind: 'vhs', name: 'VHS box', variantId: 'std-25', w: 105, h: 190, d: 25, casing: { color: '#e6dfcf', roughness: 0.8 }, radiusMm: 1 }),
+  },
+  {
+    kind: 'cartridge',
+    name: 'Cartridge sleeve',
+    group: 'Boxes',
+    variants: Object.entries(CARTRIDGE).map(([id, v]) => ({ id, label: v.label })),
+    // A VHS-style slip sleeve for a game cartridge: closed at the top with a tuck flap, open at the bottom so the
+    // cartridge slides in, and a thumb notch cut into the open end of each side so it can be pulled out again.
+    build: (id) => {
+      const variantId = CARTRIDGE[id] ? id : 'pc-gamepak';
+      const v = CARTRIDGE[variantId];
+      const [w, h, d] = [v.cart[0] + v.play[0], v.cart[1] + v.play[1], v.cart[2] + v.play[2]];
+      const notches = (panels: PanelRect[]): TemplateMark[] =>
+        panels
+          .filter((p) => p.id === 'spine' || p.id === 'spineRight')
+          .map((p) => ({ label: 'Thumb notch (cut out)', xMm: p.xMm + p.widthMm / 2, yMm: p.yMm + p.heightMm, diameterMm: v.notch }));
+      return tuckBox({ kind: 'cartridge', name: v.label, variantId, w, h, d, openBottom: true, casing: v.casing, radiusMm: 0.8, marks: notches });
+    },
   },
   {
     kind: 'cd',

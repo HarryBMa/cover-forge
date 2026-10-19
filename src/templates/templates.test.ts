@@ -107,6 +107,24 @@ describe('template dimensions', () => {
   };
   it('DVD: 129.5 mm panels, 183 mm tall, 14 mm spine', () => expect(size('dvd', 'std-14')).toEqual([129.5 * 2 + 14 + 6, 183 + 6]));
   it('VHS box: a portrait 105 × 190 mm tuck box, 25 mm deep', () => expect(size('vhs')).toEqual([105 * 2 + 25 * 2 + 10 + 6, 190 + 25 * 2 + 21.3 * 2 + 6]));
+  it('PC GamePak cartridge sleeve: a 69.85 × 100 × 15 mm cartridge plus play, open at the bottom', () => {
+    const t = buildTemplate('cartridge', 'pc-gamepak');
+    const panel = (id: string) => t.panels.find((p) => p.id === id);
+    expect([panel('front')!.widthMm, panel('front')!.heightMm, panel('spine')!.widthMm]).toEqual([71.5, 101, 16]);
+    // Only the top end closes: lid, tuck flap and two dust flaps. Nothing hangs off the bottom.
+    expect(['bottom', 'bottomTuck', 'dustBottomLeft', 'dustBottomRight'].map(panel)).toEqual([undefined, undefined, undefined, undefined]);
+    expect(size('cartridge')).toEqual([71.5 * 2 + 16 * 2 + 10 + 6, 13.6 + 16 + 101 + 6]);
+    // So the front's bottom edge is a cut that bleeds, not a fold.
+    const front = panel('front')!;
+    expect(edgeSegments(t).find((e) => e.y1 === front.yMm + front.heightMm && e.x1 === front.xMm)?.kind).toBe('cut');
+    expect(paintRect(t, front).heightMm).toBe(101 + 3);
+    // A thumb notch is marked at the open end of each side, and the 3D model leaves the open end unprinted.
+    expect(t.marks?.map((m) => [m.xMm, m.yMm, m.diameterMm])).toEqual([
+      [3 + 71.5 + 8, 3 + 13.6 + 16 + 101, 9],
+      [3 + 71.5 * 2 + 16 + 8, 3 + 13.6 + 16 + 101, 9],
+    ]);
+    expect(t.preview.kind === 'box' && t.preview.faces['-y']).toBeFalsy();
+  });
   it('cassette J-card: 25.4 + 12.7 + 65.1 mm wide, 101.6 mm tall', () => {
     const [w, h] = size('cassette');
     expect(w).toBeCloseTo(103.2 + 6);

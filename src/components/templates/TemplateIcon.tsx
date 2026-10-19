@@ -88,6 +88,13 @@ const ICONS: Record<TemplateKind, ReactNode> = {
       <path d="M12 3v2M12 19v2M3 12h2M19 12h2" />
     </>,
   ),
+  cartridge: svg(
+    <>
+      <path d="M5 2.5h14v19H5z" />
+      <path d="M8 5.5h8v8H8z" />
+      <path d="M8 17h8M8 19h8" />
+    </>,
+  ),
   'game-case': svg(
     <>
       <rect x="5" y="2.5" width="14" height="19" rx="1.5" />

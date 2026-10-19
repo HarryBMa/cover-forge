@@ -181,6 +181,7 @@ export const FORMAT_BRANDING: Record<TemplateKind, Branding> = {
   'nfc-sticker': labelBand('NFC', '#1a73e8', W, 0.1, 0, NFC_WAVES, 0.85, true, 'center'),
   'nfc-box': labelBand('NFC', '#1a73e8', W, 0.078, 0.13, NFC_WAVES, 0.85, false),
   'game-case': labelBand('GAME', '#1a1a1a', W, 0.1, 0.12),
+  cartridge: labelBand('PC-GAMEPAK', '#141414', W, 0.09, 0.16),
 };
 
 /** Per-platform branding for game cases, keyed by variant id. US releases, current era; see branding-spec.md. */
