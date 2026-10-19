@@ -181,7 +181,11 @@ export const FORMAT_BRANDING: Record<TemplateKind, Branding> = {
   'nfc-sticker': labelBand('NFC', '#1a73e8', W, 0.1, 0, NFC_WAVES, 0.85, true, 'center'),
   'nfc-box': labelBand('NFC', '#1a73e8', W, 0.078, 0.13, NFC_WAVES, 0.85, false),
   'game-case': labelBand('GAME', '#1a1a1a', W, 0.1, 0.12),
-  cartridge: labelBand('PC-GAMEPAK', '#141414', W, 0.09, 0.16),
+  // The sleeve is stored opening up, with a thumb notch cut 4.5 mm into the top of each spine: the cap's label starts below it.
+  cartridge: {
+    front: labelBand('PC-GAMEPAK', '#141414', W, 0.09, 0).front,
+    spine: { cap: { length: 0.2, fill: '#141414' }, marks: [{ parts: [{ text: 'PC-GAMEPAK', weight: 700, h: 1 }], color: W, from: 0.065, to: 0.185, rotate: 90 }] },
+  },
 };
 
 /** Per-platform branding for game cases, keyed by variant id. US releases, current era; see branding-spec.md. */

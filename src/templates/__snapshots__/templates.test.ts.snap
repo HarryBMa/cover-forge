@@ -6,7 +6,7 @@ exports[`template ids > never change the physical size of an existing template 1
   "bluray-slim-7": "269 × 155 | back 128×149, spine 7×149, front 128×149",
   "bluray-us-11": "273 × 155 | back 128×149, spine 11×149, front 128×149",
   "bluray-us-12.5": "274.5 × 155 | back 128×149, spine 12.5×149, front 128×149",
-  "cartridge-pc-gamepak": "191 × 136.6 | back 71.5×101, spine 16×101, front 71.5×101, spineRight 16×101, glue 10×101, tuck 71.5×13.6, top 71.5×16, dustTopLeft 15.2×15, dustTopRight 15.2×15",
+  "cartridge-pc-gamepak": "191 × 136.6 | back 71.5×101, spine 16×101, front 71.5×101, spineRight 16×101, glue 10×101, bottom 71.5×16, bottomTuck 71.5×13.6, dustBottomLeft 15.2×15, dustBottomRight 15.2×15",
   "cassette-std": "109.19999999999999 × 107.6 | back 25.4×101.6, spine 12.7×101.6, front 65.1×101.6",
   "cd-jewel": "284 × 126 | spine 6.5×118, back 137×118, spineRight 6.5×118, front 120×120",
   "dvd-slim-7": "272 × 189 | back 129.5×183, spine 7×183, front 129.5×183",

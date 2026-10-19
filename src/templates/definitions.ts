@@ -177,12 +177,15 @@ interface TuckBox {
   casing: PreviewMaterial;
   radiusMm: number;
   marks?: (panels: PanelRect[]) => TemplateMark[];
-  /** A sleeve with no bottom: the far end stays open for the item to slide in (no bottom panel, tuck or dust flaps). */
-  openBottom?: boolean;
+  /** A sleeve open at one end, so the item slides in there: that end gets no panel, tuck or dust flaps. */
+  openEnd?: 'top' | 'bottom';
 }
 
-/** The panels at a tuck box's bottom end, left off an open sleeve. */
-const BOTTOM_END = new Set<PanelId>(['bottom', 'bottomTuck', 'dustBottomLeft', 'dustBottomRight']);
+/** The panels at each end of a tuck box, left off that end of an open sleeve. */
+const END_PANELS: Record<'top' | 'bottom', Set<PanelId>> = {
+  top: new Set<PanelId>(['tuck', 'top', 'dustTopLeft', 'dustTopRight']),
+  bottom: new Set<PanelId>(['bottom', 'bottomTuck', 'dustBottomLeft', 'dustBottomRight']),
+};
 
 /**
  * A straight-tuck-end box net. A strip [ back | left side | front | right side | glue tab ] folds into a tube and only
@@ -193,7 +196,7 @@ function tuckBox(b: TuckBox): TemplateConfig {
   const { w, h, d } = b;
   const glue = 10;
   const tuck = Math.max(12, Math.round(d * 0.85 * 10) / 10); // long enough to hold, even on a slim box
-  const stripY = tuck + d;
+  const stripY = b.openEnd === 'top' ? 0 : tuck + d; // an open top leaves nothing above the strip
   // Dust flaps fold in from the side panels' ends to close the corner gaps. They stop a millimetre short of the lid
   // and bottom so those edges stay cut lines (panels that touch would read as folds), and are as long as the sides are deep.
   const gap = 0.8;
@@ -222,7 +225,7 @@ function tuckBox(b: TuckBox): TemplateConfig {
           { id: 'dustTopRight', label: 'Dust flap', w: d - gap, h: dust, x: 2 * w + d + gap, y: stripY - dust, follows: 'spineRight' },
           { id: 'dustBottomRight', label: 'Dust flap', w: d - gap, h: dust, x: 2 * w + d + gap, y: stripY + h, follows: 'spineRight' },
           ] as FreePiece['specs']
-        ).filter((p) => !b.openBottom || !BOTTOM_END.has(p.id)),
+        ).filter((p) => !b.openEnd || !END_PANELS[b.openEnd].has(p.id)),
       },
     ],
     marks: b.marks,
@@ -231,8 +234,15 @@ function tuckBox(b: TuckBox): TemplateConfig {
       widthMm: w,
       heightMm: h,
       depthMm: d,
-      // An open sleeve leaves its bottom face unprinted: the 3D model shows the casing (the item inside) there.
-      faces: { '+z': 'front', '-z': 'back', '-x': 'spine', '+x': 'spineRight', '+y': 'top', ...(!b.openBottom && { '-y': 'bottom' as const }) },
+      // An open sleeve leaves that end's face unprinted: the 3D model shows the casing (the item inside) there.
+      faces: {
+        '+z': 'front',
+        '-z': 'back',
+        '-x': 'spine',
+        '+x': 'spineRight',
+        ...(b.openEnd !== 'top' && { '+y': 'top' as const }),
+        ...(b.openEnd !== 'bottom' && { '-y': 'bottom' as const }),
+      },
       casing: b.casing,
       glossy: false,
       radiusMm: b.radiusMm,
@@ -411,8 +421,8 @@ export const TEMPLATE_DEFS: TemplateDef[] = [
     name: 'Cartridge sleeve',
     group: 'Boxes',
     variants: Object.entries(CARTRIDGE).map(([id, v]) => ({ id, label: v.label })),
-    // A VHS-style slip sleeve for a game cartridge: closed at the top with a tuck flap, open at the bottom so the
-    // cartridge slides in, and a thumb notch cut into the open end of each side so it can be pulled out again.
+    // A VHS-style slip sleeve for a game cartridge, stored opening up: open at the top, where the cartridge's grip end
+    // sticks out, with a thumb notch cut into each side there to pull it out by; the bottom closes with a tuck flap.
     build: (id) => {
       const variantId = CARTRIDGE[id] ? id : 'pc-gamepak';
       const v = CARTRIDGE[variantId];
@@ -420,8 +430,8 @@ export const TEMPLATE_DEFS: TemplateDef[] = [
       const notches = (panels: PanelRect[]): TemplateMark[] =>
         panels
           .filter((p) => p.id === 'spine' || p.id === 'spineRight')
-          .map((p) => ({ label: 'Thumb notch (cut out)', xMm: p.xMm + p.widthMm / 2, yMm: p.yMm + p.heightMm, diameterMm: v.notch }));
-      return tuckBox({ kind: 'cartridge', name: v.label, variantId, w, h, d, openBottom: true, casing: v.casing, radiusMm: 0.8, marks: notches });
+          .map((p) => ({ label: 'Thumb notch (cut out)', xMm: p.xMm + p.widthMm / 2, yMm: p.yMm, diameterMm: v.notch }));
+      return tuckBox({ kind: 'cartridge', name: v.label, variantId, w, h, d, openEnd: 'top', casing: v.casing, radiusMm: 0.8, marks: notches });
     },
   },
   {
