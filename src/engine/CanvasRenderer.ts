@@ -13,6 +13,7 @@ import { drawCode } from './code';
 import { drawBorder } from './border';
 import { getBrand } from '../brands';
 import { drawOfficial, spineTitleCase, spineTitleColor, spineTitleScale, spineTitleStartMm } from './official';
+import { drawGamePak, loadGamePakFonts, sleeveImageUrls } from './gamepak';
 
 export interface Scene {
   template: TemplateConfig;
@@ -79,6 +80,8 @@ export function renderCover(
 
   const digital = scene.banner;
   if (digital) drawOfficial(ctx, t, px);
+  // The cartridge's Branded layout is the PC GamePak sleeve, filled in from the item's own words and pictures.
+  if (digital && item) drawGamePak(ctx, t, item, px, getImage);
 
   if (item) {
     const chosen = resolveSpine(shared, item);
@@ -123,7 +126,7 @@ export function renderCover(
 export function preloadItem({ item, shared, designs }: Pick<Scene, 'item' | 'shared' | 'designs'>): Promise<unknown> {
   if (!item) return Promise.resolve();
   const layered = layeredShared(shared, designOf(designs, item));
-  return loadImages(PANEL_IDS.map((id) => resolvePanel(layered, item, id, null).imageUrl));
+  return Promise.all([loadImages([...PANEL_IDS.map((id) => resolvePanel(layered, item, id, null).imageUrl), ...sleeveImageUrls(item)]), loadGamePakFonts()]);
 }
 
 /**

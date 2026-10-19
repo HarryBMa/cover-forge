@@ -24,6 +24,7 @@ import { BackgroundSummary, BorderSummary, CodeSummary, ImageSummary, LogoSummar
 import { getBrand } from '../../brands';
 import { defaultCapHeightMm } from '../../engine/SpineTypography';
 import { CodeControls } from './CodeControls';
+import { SleeveControls, SleeveSummary } from './SleeveControls';
 
 /** Natural pixel size of an image once loaded (needed to show where it sits). */
 function useImageSize(url: string | null) {
@@ -96,7 +97,7 @@ function PanelBody({ panel }: { panel: PanelId }) {
 
   const { isOverride, resolved: r, own, spine } = useEditView(panel);
   // Which part of the design is open for editing; everything else is a read-only summary.
-  const [open, setOpen] = useState<'background' | 'border' | 'image' | 'logo' | 'code' | 'spine' | null>(null);
+  const [open, setOpen] = useState<'sleeve' | 'background' | 'border' | 'image' | 'logo' | 'code' | 'spine' | null>(null);
   const target = isOverride ? item.id : null; // null = the group scope
   const t = r.transform;
   const size = useImageSize(r.imageUrl);
@@ -127,6 +128,11 @@ function PanelBody({ panel }: { panel: PanelId }) {
 
   return (
     <>
+      {template.kind === 'cartridge' && (
+        <Section title="Sleeve text & pictures" summary={<SleeveSummary />} editing={open === 'sleeve'} onEdit={() => setOpen('sleeve')} onDone={() => setOpen(null)}>
+          <SleeveControls />
+        </Section>
+      )}
       <Section title="Background" summary={<BackgroundSummary r={r} />} editing={open === 'background'} onEdit={() => setOpen('background')} onDone={() => setOpen(null)}>
         <div className="field row">
           <input
