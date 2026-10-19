@@ -5,6 +5,11 @@ import { hydrateLocalImages } from './storage/localImages';
 import { readStartup } from './context/share';
 import { backupBeforeLink } from './context/session';
 import './styles/global.css';
+// The PC GamePak sleeve's typefaces (SIL Open Font License), drawn on the canvas by engine/gamepak.ts.
+import '@fontsource/exo-2/latin-900-italic.css';
+import '@fontsource/rajdhani/latin-500.css';
+import '@fontsource/rajdhani/latin-600.css';
+import '@fontsource/rajdhani/latin-700.css';
 
 async function start() {
   await hydrateLocalImages();

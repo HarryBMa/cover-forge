@@ -1,5 +1,6 @@
 import type { PanelId } from './template';
 import type { PanelSettings, SpineSettings } from './editor';
+import type { SleeveCopy } from './sleeve';
 
 export type MediaType = 'game' | 'movie' | 'tv' | 'music' | 'custom';
 
@@ -26,4 +27,6 @@ export interface MediaItem {
   designId?: string;
   /** The template (case) this item is printed for, a library id such as `game-case-ps4`. Set when it is added. */
   templateId?: string;
+  /** The sleeve's words and pictures for the PC GamePak cartridge template; unset fields take defaults (see sleeveOf). */
+  sleeve?: Partial<SleeveCopy>;
 }

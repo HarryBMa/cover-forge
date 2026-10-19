@@ -56,6 +56,8 @@ describe('template library', () => {
     expect(detail('dvd-slim-7')).toBe('DVD Slim Case · 129.5 × 183 mm · 7 mm spine');
     expect(detail('game-case-xbox-one')).toBe('Blu-ray Case · 128 × 149 mm · 11 mm spine');
     expect(detail('vhs-std-25')).toBe('VHS Sleeve · 105 × 190 mm · 25 mm spine');
+    expect(detail('cartridge-pc-gamepak')).toBe('PC GamePak Sleeve · 71.5 × 101 mm · 16 mm spine');
+    expect(searchLibrary('cartridge').map((e) => e.id)).toEqual(['cartridge-pc-gamepak']);
     expect(detail('nfc-card-cr80-duplex')).toBe('CR80 Card · 54 × 85.6 mm');
     expect(detail('vinyl-7inch')).toBe('7" Single Sleeve · 184 × 184 mm · 3 mm spine');
     expect(detail('game-case-ps4')).toBe('Custom · 129.5 × 161 mm · 14 mm spine');

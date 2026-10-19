@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState, type Dispatch, type ReactNode } from 'react';
 import type { MediaItem } from '../types/media';
+import type { SleeveCopy } from '../types/sleeve';
 import type { PanelId, TemplateConfig } from '../types/template';
 import type { Design, PanelSettings, SharedSettings, SpineSettings } from '../types/editor';
 import { DEFAULT_DESIGN_ID } from '../engine/designs';
@@ -52,6 +53,8 @@ export type Action =
   | { type: 'removeItem'; id: string }
   /** Adds an image (e.g. an upload) to an item's library; it becomes `screenshot:<index>`. */
   | { type: 'addAsset'; id: string; url: string }
+  /** Merges into an item's PC GamePak sleeve text and pictures (see SleeveCopy). */
+  | { type: 'updateSleeve'; id: string; patch: Partial<SleeveCopy> }
   | { type: 'selectItem'; id: string | null }
   /** Replaces the whole working session (e.g. a loaded config file). */
   | { type: 'loadState'; state: AppState }
@@ -164,6 +167,8 @@ function apply(state: AppState, action: Action): AppState {
     }
     case 'addAsset':
       return updateItem(state, action.id, (i) => ({ ...i, assets: { ...i.assets, screenshots: [...i.assets.screenshots, action.url] } }));
+    case 'updateSleeve':
+      return updateItem(state, action.id, (i) => ({ ...i, sleeve: { ...i.sleeve, ...action.patch } }));
     case 'loadState':
       return action.state;
     case 'selectItem':

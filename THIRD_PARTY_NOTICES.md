@@ -18,3 +18,9 @@ Simple Icons removes marks at their owners' request, so the Xbox and Nintendo ma
 The SVG files in `src/brands/svg/` (PlayStation, Nintendo Switch, Switch 2, Wii, Wii U, GameCube, the original Xbox, Xbox 360, Xbox One and Xbox Series X, the DVD Video, Blu-ray Disc, VHS, Compact Disc, Compact Cassette and contactless (NFC) symbol and the PC CD-ROM logo, plus the swoosh artwork `xbox360-waves.png`) were source from wiki pages and are
 turned into `src/brands/logos.generated.ts` by `npm run gen:brands`. They are used only to draw the "Branded" header and spine of the matching
 platform. They are trademarks of their respective owners (Sony Interactive Entertainment, Nintendo); CoverForge is not affiliated with or endorsed by them.
+
+## Fonts
+
+The PC GamePak sleeve is set in [Exo 2](https://fonts.google.com/specimen/Exo+2) and [Rajdhani](https://fonts.google.com/specimen/Rajdhani),
+bundled through `@fontsource/exo-2` and `@fontsource/rajdhani` under the [SIL Open Font License 1.1](https://openfontlicense.org).
+The PEGI label it draws is the rating system's mark (PEGI S.A.); use it to show a game's real rating.

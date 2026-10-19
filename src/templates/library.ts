@@ -30,6 +30,7 @@ export interface LibraryEntry {
 
 const GROUP_OF: Record<TemplateKind, LibraryGroup> = {
   'game-case': 'Games',
+  cartridge: 'Games',
   dvd: 'Movies & TV',
   bluray: 'Movies & TV',
   uhd: 'Movies & TV',
@@ -68,6 +69,7 @@ const STANDARDS: { name: string; front: [number, number]; spine?: number; back?:
   { name: 'Blu-ray Case (EU)', front: [128, 149], spine: 14 },
   { name: 'CD Jewel Case', front: [120, 120], spine: 6.5, back: [137, 118] },
   { name: 'VHS Sleeve', front: [105, 190], spine: 25 },
+  { name: 'PC GamePak Sleeve', front: [71.5, 101], spine: 16 },
   { name: 'Cassette J-Card', front: [65.1, 101.6], spine: 12.7 },
   { name: '12" LP Sleeve', front: [314, 314], spine: 3 },
   { name: '10" Record Sleeve', front: [262, 262], spine: 3 },
