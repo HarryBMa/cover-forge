@@ -1,11 +1,12 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { localStamps } from './scripts/localStampsPlugin';
 
 // `base: './'` keeps asset paths relative so the build works on GitHub Pages subpaths.
 export default defineConfig(({ mode }) => ({
   base: './',
-  plugins: [react(), ...(mode === 'release' ? [viteSingleFile()] : [])],
+  plugins: [react(), localStamps(), ...(mode === 'release' ? [viteSingleFile()] : [])],
   server: {
     // Dev-only CORS workaround for the Steam Store API (production uses the /worker relay).
     proxy: {

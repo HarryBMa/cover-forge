@@ -1,6 +1,7 @@
 import type { PanelId } from './template';
 import type { PanelSettings, SpineSettings } from './editor';
 import type { SleeveCopy } from './sleeve';
+import type { StudioDoc } from './studio';
 
 export type MediaType = 'game' | 'movie' | 'tv' | 'music' | 'custom';
 
@@ -29,4 +30,6 @@ export interface MediaItem {
   templateId?: string;
   /** The sleeve's words and pictures for the PC GamePak cartridge template; unset fields take defaults (see sleeveOf). */
   sleeve?: Partial<SleeveCopy>;
+  /** Free-placed stamps, frames, pictures and text drawn over the cover (the Studio). */
+  studio?: StudioDoc;
 }

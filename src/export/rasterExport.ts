@@ -7,7 +7,8 @@ import { PAPER_MM, type CropRect, type Imposition, type PaperSize } from './impo
 
 export type RasterFormat = 'png' | 'jpeg';
 
-export type ExportFormat = RasterFormat | 'pdf' | 'svg';
+/** `psd`: a layered Photoshop file per game (no print sheets). */
+export type ExportFormat = RasterFormat | 'pdf' | 'svg' | 'psd';
 
 export interface ExportSettings {
   paper: PaperSize;
@@ -36,7 +37,7 @@ export function canvasToBlob(canvas: HTMLCanvasElement, format: RasterFormat, qu
 
 /** Renders one item's flat wrap at full 300 DPI on a fresh offscreen canvas. */
 export async function renderItemCanvas(base: SceneBase, item: MediaItem, guides: boolean): Promise<HTMLCanvasElement> {
-  await preloadItem({ ...base, item });
+  await preloadItem({ ...base, item, template: base.template });
   const { width, height } = canvasSizePx(base.template);
   const canvas = document.createElement('canvas');
   canvas.width = width;

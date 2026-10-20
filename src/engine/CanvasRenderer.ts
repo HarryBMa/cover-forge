@@ -14,6 +14,8 @@ import { drawBorder } from './border';
 import { getBrand } from '../brands';
 import { drawOfficial, spineTitleCase, spineTitleColor, spineTitleScale, spineTitleStartMm } from './official';
 import { drawGamePak, loadGamePakFonts, sleeveImageUrls } from './gamepak';
+import { getStudioOverlay, hasStudio } from './studioCache';
+import { paintRect as panelPaintRect } from '../templates/geometry';
 
 export interface Scene {
   template: TemplateConfig;
@@ -26,6 +28,8 @@ export interface Scene {
   showGuides: boolean;
   /** Clear everything outside the cut lines (bleed, and any gaps between panels), so the canvas looks like the cut-out piece (the 2D view). */
   hideOutsideCut?: boolean;
+  /** Leave the item's Studio objects out (the Studio editor draws them itself, on top). */
+  skipStudio?: boolean;
 }
 
 export type ImageLookup = (url: string | null | undefined) => HTMLImageElement | null;
@@ -78,7 +82,8 @@ export function renderCover(
     drawBorder(ctx, panel, r.border, px);
   }
 
-  const digital = scene.banner;
+  // A Studio design can stand in for the built-in Branded layout.
+  const digital = scene.banner && !item?.studio?.hideBranded;
   if (digital) drawOfficial(ctx, t, px);
   // The cartridge's Branded layout is the PC GamePak sleeve, filled in from the item's own words and pictures.
   if (digital && item && t.kind === 'cartridge') {
@@ -110,6 +115,19 @@ export function renderCover(
     if (item && code.kind !== 'none') drawCode(ctx, t, panel, code, item, px);
   }
 
+  // The Studio layer (free-placed stamps, frames, text), clipped to the print area: the panels and their bleed.
+  const overlay = item && !scene.skipStudio && hasStudio(item) ? getStudioOverlay(item, t) : null;
+  if (overlay) {
+    ctx.save();
+    ctx.beginPath();
+    for (const p of t.panels) {
+      const a = panelPaintRect(t, p);
+      ctx.rect(a.xMm * px, a.yMm * px, a.widthMm * px, a.heightMm * px);
+    }
+    ctx.clip();
+    ctx.drawImage(overlay, 0, 0, t.totalWidthMm * px, t.totalHeightMm * px);
+    ctx.restore();
+  }
 
   if (scene.hideOutsideCut) {
     // Keep only what's inside the panels' trim rects. Snapped outwards to whole pixels, so touching panels leave no seam.
@@ -127,11 +145,15 @@ export function renderCover(
   ctx.restore();
 }
 
-/** Preloads every image the item uses so a subsequent synchronous render is complete. */
-export function preloadItem({ item, shared, designs }: Pick<Scene, 'item' | 'shared' | 'designs'>): Promise<unknown> {
+/**
+ * Preloads every image the item uses so a subsequent synchronous render is complete, and (given its template) renders
+ * its Studio layer. Fabric is only loaded for items that have a Studio design.
+ */
+export function preloadItem({ item, shared, designs, template }: Pick<Scene, 'item' | 'shared' | 'designs'> & { template?: TemplateConfig }): Promise<unknown> {
   if (!item) return Promise.resolve();
   const layered = layeredShared(shared, designOf(designs, item));
-  return Promise.all([loadImages([...PANEL_IDS.map((id) => resolvePanel(layered, item, id, null).imageUrl), ...sleeveImageUrls(item)]), loadGamePakFonts()]);
+  const studio = template && hasStudio(item) && getStudioOverlay(item, template) === undefined ? import('../studio/render').then((m) => m.prepareStudioOverlay(item, template)) : null;
+  return Promise.all([loadImages([...PANEL_IDS.map((id) => resolvePanel(layered, item, id, null).imageUrl), ...sleeveImageUrls(item)]), loadGamePakFonts(), studio]);
 }
 
 /**

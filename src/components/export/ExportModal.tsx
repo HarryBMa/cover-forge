@@ -89,6 +89,7 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
                 <option value="jpeg">JPEG (300 DPI)</option>
                 <option value="pdf">PDF (exact mm, vector guides)</option>
                 <option value="svg">SVG (exact mm, vector guides)</option>
+                <option value="psd">Photoshop PSD (layered, per game)</option>
               </select>
             </label>
             <label className="check">
@@ -96,7 +97,9 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
               Cut / fold guides{chosen ? (plainToo ? ' (plain-paper sheets only)' : ' (not on die-cut sheets)') : ''}
             </label>
             <p className="muted">
-              {format === 'pdf'
+              {format === 'psd'
+                ? 'One layered Photoshop file per game: the cover by panel, every Studio object as its own layer (frames as clipping groups, editable text), and the cut lines hidden on top. ZIP for all games.'
+                : format === 'pdf'
                 ? 'ZIP: one PDF per game, one PDF of all sheets, and each game’s original images.'
                 : format === 'svg'
                   ? 'ZIP: one SVG per game, one SVG per sheet, and each game’s original images.'

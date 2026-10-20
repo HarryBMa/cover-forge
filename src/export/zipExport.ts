@@ -19,6 +19,9 @@ export const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').r
 
 const isPdf = (s: ExportSettings) => s.format === 'pdf';
 const isSvg = (s: ExportSettings) => s.format === 'svg';
+const isPsd = (s: ExportSettings) => s.format === 'psd';
+/** Photoshop export pulls in Fabric and ag-psd: loaded only when it's used. */
+const psdOf = async (base: SceneBase, item: MediaItem) => (await import('./psdExport')).buildItemPsd(base, item);
 /** PDF and SVG carry their guides as vector lines, so their artwork is rendered without guides baked in. */
 const isVector = (s: ExportSettings) => isPdf(s) || isSvg(s);
 const rasterExt = (f: RasterFormat) => (f === 'jpeg' ? 'jpg' : 'png');
@@ -55,6 +58,10 @@ export function groupByTemplate(base: ExportBase, items: MediaItem[]): { base: S
 /** Single game: flat image, or a one-page PDF/SVG at the wrap's exact size. */
 export async function exportCurrent(all: ExportBase, item: MediaItem, s: ExportSettings): Promise<void> {
   const [{ base }] = groupByTemplate(all, [item]);
+  if (isPsd(s)) {
+    saveAs(await psdOf(base, item), `${slug(item.title)}.psd`);
+    return;
+  }
   if (isVector(s)) {
     const canvas = await renderItemCanvas(base, item, false);
     saveAs(isSvg(s) ? buildItemSvg(canvas, base.template, s.guides) : buildItemPdf(canvas, base.template, s.guides), `${slug(item.title)}.${isSvg(s) ? 'svg' : 'pdf'}`);
@@ -102,6 +109,10 @@ export async function exportZip(all: ExportBase, items: MediaItem[], s: ExportSe
       used.set(slug(item.title), n);
       const dir = zip.folder(n > 1 ? `${slug(item.title)}-${n}` : slug(item.title))!;
 
+      if (isPsd(s)) {
+        dir.file('cover.psd', await psdOf(base, item));
+        continue;
+      }
       const clean = await renderItemCanvas(base, item, false);
       rendered.push(clean);
       if (isSvg(s)) {
@@ -113,6 +124,7 @@ export async function exportZip(all: ExportBase, items: MediaItem[], s: ExportSe
         dir.file(`cover.${rasterExt(f)}`, await canvasToBlob(clean, f, s.jpegQuality));
       }
     }
+    if (isPsd(s)) continue; // Photoshop files are per game; print sheets come from the other formats
     onProgress(i, total, 'Composing print sheets');
     await addSheets(groups.length > 1 ? sheetsRoot.folder(slug(base.template.id))! : sheetsRoot, base, group, rendered, s);
   }
