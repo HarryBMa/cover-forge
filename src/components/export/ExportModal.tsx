@@ -3,6 +3,7 @@ import { templateOf, useAppState, useSelectedItem } from '../../context/AppConte
 import type { PaperSize } from '../../export/imposition';
 import type { ExportSettings } from '../../export/rasterExport';
 import { exportCurrent, exportSheetsPdf, exportZip } from '../../export/zipExport';
+import { canExportKit, exportGamePakKit } from '../../export/gamepakKit';
 import { PrintSheetPreview } from './PrintSheetPreview';
 import { fitsLabelSheet, getLabelSheet, labelSheetsFor } from '../../export/sheets';
 import type { MediaItem } from '../../types/media';
@@ -44,6 +45,9 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
   }
 
   const busy = progress !== null;
+  // The selected item's sleeve, when it is a PC GamePak one: its faces and words as a kit for the launcher's TV mode.
+  const selectedTemplate = selected ? templateOf(state, selected) : null;
+  const kitable = selectedTemplate !== null && canExportKit(selectedTemplate);
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Export" onClick={onClose}>
@@ -116,12 +120,26 @@ export function ExportModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
         {error && <p className="error">{error}</p>}
+        {kitable && (
+          <p className="muted">
+            PC GamePak kit: this sleeve’s four faces and its words in one file, for the PC GamePak launcher’s TV mode
+            (wizard → Edit → Sleeve).{banner ? '' : ' Turn on Branded first for the printed sleeve.'}
+          </p>
+        )}
 
         <div className="modal-actions">
           <button onClick={onClose}>Close</button>
           <button disabled={busy || !selected} onClick={() => selected && run(() => exportCurrent(base, selected, settings))}>
             Download current
           </button>
+          {kitable && (
+            <button
+              disabled={busy}
+              onClick={() => selected && selectedTemplate && run(() => exportGamePakKit({ shared, designs, banner, template: selectedTemplate }, selected))}
+            >
+              Download PC GamePak kit
+            </button>
+          )}
           {format === 'pdf' && (
             <button disabled={busy || !items.length} onClick={() => run(() => exportSheetsPdf(base, items, settings))}>
               Download sheets (PDF)
