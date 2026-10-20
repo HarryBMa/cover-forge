@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CanvasTexture, LinearFilter, LinearMipmapLinearFilter, SRGBColorSpace, type Texture } from 'three';
+import type { Foil } from '../../three/PreviewMaterials';
 import { useAppState, useSelectedItem } from '../../context/AppContext';
 import { useSelectionPulse } from '../../context/useSelectionPulse';
 import { preloadItem, renderCover } from '../../engine/CanvasRenderer';
@@ -59,11 +60,33 @@ export function ThreeDPreview() {
       markStale(texture);
     };
     paint();
-    void preloadItem({ item, shared, designs }).then(paint);
+    void preloadItem({ item, shared, designs, template }).then(paint);
     return () => {
       cancelled = true;
     };
   }, [canvas, texture, template, item, shared, designs, banner, showGuides]);
+
+  // Holo foil: a mask of where it shows, rendered after the artwork (only when the design has foil).
+  const [foil, setFoil] = useState<Foil | null>(null);
+  const foilKey = item?.studio ? JSON.stringify(item.studio) : '';
+  useEffect(() => {
+    let cancelled = false;
+    let made: Texture | null = null;
+    void (async () => {
+      const { hasHolo, renderHoloMask } = await import('../../studio/holo');
+      const mask = item && hasHolo(item) ? await renderHoloMask(item, template) : null;
+      if (cancelled) return;
+      if (!mask) return setFoil(null);
+      made = new CanvasTexture(mask);
+      made.anisotropy = 8;
+      setFoil({ mask: made, style: item?.studio?.foil ?? 'pastel', sheetMm: [template.totalWidthMm, template.totalHeightMm] });
+    })();
+    return () => {
+      cancelled = true;
+      made?.dispose();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the design's JSON stands for the item here
+  }, [foilKey, template]);
 
   // Flash the selected panel on the artwork, fading out over about a second.
   useEffect(() => {
@@ -98,7 +121,7 @@ export function ThreeDPreview() {
 
   return (
     <div className="three-wrap">
-      <PreviewScene texture={texture} template={template} autoRotate={autoRotate} showMeasurements={showMeasurements} />
+      <PreviewScene texture={texture} template={template} foil={foil} autoRotate={autoRotate} showMeasurements={showMeasurements} />
     </div>
   );
 }

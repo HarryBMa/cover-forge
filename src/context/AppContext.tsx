@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState, type Dispatch, type ReactNode } from 'react';
 import type { MediaItem } from '../types/media';
 import type { SleeveCopy } from '../types/sleeve';
+import type { StudioDoc } from '../types/studio';
 import type { PanelId, TemplateConfig } from '../types/template';
 import type { Design, PanelSettings, SharedSettings, SpineSettings } from '../types/editor';
 import { DEFAULT_DESIGN_ID } from '../engine/designs';
@@ -14,7 +15,8 @@ import { sortItems } from './items';
 import { loadSession, restoreSession, saveSession } from './session';
 import { applyParams, type Startup } from './share';
 
-export type ViewMode = '2d' | '3d';
+/** The flat cover, the 3D model, or the Studio (free drag-and-drop layout over the cover). */
+export type ViewMode = '2d' | '3d' | 'studio';
 /** Whether panel edits go to the selected item's design (shared with every item using it) or to that item's own overrides. */
 export type EditMode = 'shared' | 'override';
 
@@ -42,6 +44,10 @@ export interface AppState {
   view: ViewMode;
   /** UI-only (not persisted): slowly spins the 3D model as a hands-free product demo. */
   autoRotate: boolean;
+  /** UI-only: the Studio objects selected on the canvas. */
+  studioSelection: string[];
+  /** UI-only: Studio undo/redo, per item (past and future documents, most recent last). */
+  studioHistory: Record<string, { past: StudioDoc[]; future: StudioDoc[]; key?: string; at?: number }>;
   shared: SharedSettings;
   /** Named designs on top of the Default one (`shared`); an item picks one with `designId`. See engine/designs.ts. */
   designs: Design[];
@@ -79,7 +85,17 @@ export type Action =
   /** Empties a design (or one panel of it); for Default that resets it to the built-in look. */
   | { type: 'clearDesign'; design: string; panel?: PanelId }
   /** Removes an item's overrides for one panel (or all of them), so it follows the shared settings again. */
-  | { type: 'clearOverrides'; id: string; panel?: PanelId };
+  | { type: 'clearOverrides'; id: string; panel?: PanelId }
+  /**
+   * Replaces an item's Studio design (an undo step). Changes with the same `coalesce` key within a second merge into
+   * one step, so dragging a slider is one undo, not fifty.
+   */
+  | { type: 'studioSet'; id: string; doc: StudioDoc; coalesce?: string; select?: string[] }
+  | { type: 'studioUndo'; id: string }
+  | { type: 'studioRedo'; id: string }
+  | { type: 'studioSelect'; ids: string[] }
+  /** Copies an item's Studio design to other items (each fills its frames and fields with its own pictures and text). */
+  | { type: 'studioCopyTo'; from: string; to: string[] };
 
 export const initialState: AppState = {
   items: [],
@@ -95,6 +111,8 @@ export const initialState: AppState = {
   showMeasurements: false,
   view: '3d',
   autoRotate: true,
+  studioSelection: [],
+  studioHistory: {},
   shared: {
     panels: {},
     spine: { fontFamily: 'Helvetica, Arial, sans-serif', color: '#ffffff' },
@@ -172,7 +190,43 @@ function apply(state: AppState, action: Action): AppState {
     case 'loadState':
       return action.state;
     case 'selectItem':
-      return { ...state, selectedItemId: action.id };
+      return { ...state, selectedItemId: action.id, studioSelection: action.id === state.selectedItemId ? state.studioSelection : [] };
+    case 'studioSet': {
+      const item = state.items.find((i) => i.id === action.id);
+      if (!item) return state;
+      const before = item.studio ?? { objects: [] };
+      const h = state.studioHistory[action.id] ?? { past: [], future: [] };
+      const now = Date.now();
+      // A run of edits with the same key (one slider drag, one text being typed) is one undo step.
+      const merge = !!action.coalesce && h.key === action.coalesce && h.at !== undefined && now - h.at < 1000;
+      const past = merge ? h.past : [...h.past, before].slice(-100);
+      return {
+        ...updateItem(state, action.id, (i) => ({ ...i, studio: action.doc })),
+        studioHistory: { ...state.studioHistory, [action.id]: { past, future: [], key: action.coalesce, at: now } },
+        ...(action.select && { studioSelection: action.select }),
+      };
+    }
+    case 'studioUndo':
+    case 'studioRedo': {
+      const item = state.items.find((i) => i.id === action.id);
+      const h = state.studioHistory[action.id];
+      if (!item || !h) return state;
+      const from = action.type === 'studioUndo' ? h.past : h.future;
+      if (!from.length) return state;
+      const doc = from[from.length - 1];
+      const current = item.studio ?? { objects: [] };
+      const next = action.type === 'studioUndo' ? { past: h.past.slice(0, -1), future: [...h.future, current] } : { past: [...h.past, current], future: h.future.slice(0, -1) };
+      const ids = new Set(doc.objects.map((o) => o.id));
+      return { ...updateItem(state, action.id, (i) => ({ ...i, studio: doc })), studioHistory: { ...state.studioHistory, [action.id]: next }, studioSelection: state.studioSelection.filter((id) => ids.has(id)) };
+    }
+    case 'studioSelect':
+      return { ...state, studioSelection: action.ids };
+    case 'studioCopyTo': {
+      const src = state.items.find((i) => i.id === action.from)?.studio;
+      if (!src) return state;
+      const to = new Set(action.to.filter((id) => id !== action.from));
+      return { ...state, items: state.items.map((i) => (to.has(i.id) ? { ...i, studio: structuredClone(src) } : i)) };
+    }
     case 'selectPanel':
       return { ...state, selectedPanel: action.panel, panelPulse: state.panelPulse + 1 };
     case 'setEditMode':
