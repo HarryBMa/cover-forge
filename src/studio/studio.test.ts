@@ -9,6 +9,7 @@ import { LAYOUTS, layoutsFor } from './layouts';
 import { placePayload } from './place';
 import { registerStamps, searchStamps, stampSrc, type StampDef } from './stamps';
 import { BUILTIN_STAMPS } from './stamps.generated';
+import { hasHolo } from './holo';
 
 const game: MediaItem = {
   id: 'steam-413150',
@@ -211,5 +212,24 @@ describe('Studio state', () => {
     expect(s.items.find((i) => i.id === other.id)!.studio).toEqual(doc2);
     const back = restoreSession(JSON.parse(JSON.stringify(serializeSession(s))), initialState);
     expect(back.items.find((i) => i.id === game.id)!.studio).toEqual(doc2);
+  });
+});
+
+describe('holo foil', () => {
+  const b = { x: 30, y: 40, w: 20, h: 12 };
+  it('starts the holographic sticker as foil, and nothing else', () => {
+    expect(makeStamp('gp-holo', b).holo).toBe('light');
+    expect(makeStamp('gp-seal', b).holo).toBeUndefined();
+  });
+  it('finds visible foil in a design, and keeps it through save and load', () => {
+    const foil = { ...makeShape('rect', b, '#ffffff'), holo: 'full' as const };
+    expect(hasHolo({ ...game, studio: { objects: [makeText('{title}', b)] } })).toBe(false);
+    expect(hasHolo({ ...game, studio: { objects: [{ ...foil, hidden: true }] } })).toBe(false);
+    const doc: StudioDoc = { objects: [foil], foil: 'glitter' };
+    expect(hasHolo({ ...game, studio: doc })).toBe(true);
+    let s = reducer(initialState, { type: 'addItem', item: game });
+    s = reducer(s, { type: 'studioSet', id: game.id, doc });
+    const back = restoreSession(JSON.parse(JSON.stringify(serializeSession(s))), initialState);
+    expect(back.items[0].studio).toEqual(doc);
   });
 });

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, type ElementRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
 import { MeshStandardMaterial, type BufferGeometry, type Texture } from 'three';
 import type { TemplateConfig } from '../types/template';
 import { FACE_ORDER, createBodyGeometry, createInsetGeometry, createLabelGeometry, createLabelSliceGeometry, createSlabBodyGeometry, createSlabFaceGeometry, bodyPrintedFaces, insetFaces, insetPlacement, labelWrap, modelSizeMm, previewScale } from './PreviewGeometry';
 import { Measurements3D } from './Measurements3D';
-import { createBodyMaterial, createSleeveMaterial } from './PreviewMaterials';
+import { createBodyMaterial, createSleeveMaterial, type Foil } from './PreviewMaterials';
+import { onSnapshot } from './snapshot';
 
 /** Three-quarter view showing the left edge (-X), top edge (+Y) and front (+Z). Tune via the console log. */
 export const DEFAULT_CAMERA_POSITION: [number, number, number] = [-2.2, 1.1, 2.6];
@@ -13,7 +14,7 @@ export const DEFAULT_CAMERA_POSITION: [number, number, number] = [-2.2, 1.1, 2.6
 const fmt = (v: { x: number; y: number; z: number }) => `[${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}]`;
 
 /** The 3D model of the current template: a case/box, or a card/disk with an optional separate label. */
-function Model({ texture, template }: { texture: Texture; template: TemplateConfig }) {
+function Model({ texture, template, foil }: { texture: Texture; template: TemplateConfig; foil?: Foil | null }) {
   const spec = template.preview;
   const geometry = useMemo(() => (spec.kind === 'slab' ? createSlabBodyGeometry(spec) : createBodyGeometry(template, spec)), [template, spec]);
 
@@ -54,10 +55,10 @@ function Model({ texture, template }: { texture: Texture; template: TemplateConf
 
   const { sleeve, body } = useMemo(
     () => ({
-      sleeve: createSleeveMaterial(texture, spec.kind === 'box' ? spec.glossy : true),
+      sleeve: createSleeveMaterial(texture, spec.kind === 'box' ? spec.glossy : true, foil),
       body: createBodyMaterial(spec.kind === 'box' ? spec.casing : spec.body),
     }),
-    [texture, spec],
+    [texture, spec, foil],
   );
   // One material per face: the printed sleeve where a panel is mapped, otherwise the body.
   const materials = useMemo(() => {
@@ -115,7 +116,27 @@ function Model({ texture, template }: { texture: Texture; template: TemplateConf
   );
 }
 
-export function PreviewScene({ texture, template, autoRotate = false, showMeasurements = false }: { texture: Texture; template: TemplateConfig; autoRotate?: boolean; showMeasurements?: boolean }) {
+/** Answers snapshot requests: renders the current view at a higher pixel ratio and reads it back. */
+function Snapshotter() {
+  const { gl, scene, camera } = useThree();
+  useEffect(
+    () =>
+      onSnapshot(({ scale, resolve }) => {
+        const prev = gl.getPixelRatio();
+        gl.setPixelRatio(Math.max(prev, scale));
+        gl.render(scene, camera);
+        // Read straight after drawing, before the browser can clear the buffer.
+        const url = gl.domElement.toDataURL('image/png');
+        gl.setPixelRatio(prev);
+        gl.render(scene, camera);
+        resolve(url);
+      }),
+    [gl, scene, camera],
+  );
+  return null;
+}
+
+export function PreviewScene({ texture, template, foil, autoRotate = false, showMeasurements = false }: { texture: Texture; template: TemplateConfig; foil?: Foil | null; autoRotate?: boolean; showMeasurements?: boolean }) {
   const controls = useRef<ElementRef<typeof OrbitControls>>(null);
   const [, height] = modelSizeMm(template.preview);
   // Logged after each drag/zoom so a good angle can be copied into DEFAULT_CAMERA_POSITION.
@@ -126,7 +147,8 @@ export function PreviewScene({ texture, template, autoRotate = false, showMeasur
   return (
     <Canvas camera={{ fov: 40, position: DEFAULT_CAMERA_POSITION }} dpr={[1, 2]}>
       <Environment preset="city" />
-      <Model texture={texture} template={template} />
+      <Model texture={texture} template={template} foil={foil} />
+      <Snapshotter />
       {showMeasurements && <Measurements3D spec={template.preview} template={template} />}
       <ContactShadows position={[0, (-height * previewScale(template.preview)) / 2 - 0.02, 0]} opacity={0.5} blur={2.5} scale={6} />
       <OrbitControls
