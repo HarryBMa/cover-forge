@@ -51,4 +51,11 @@ describe('buildKit', () => {
     const odd = { ...game, sleeve: { rating: null, accent: 'red' } } as MediaItem;
     expect(buildKit(odd, {})).toEqual({ format: 'pc-gamepak-sleeve', version: 1, faces: {} });
   });
+
+  it('carries foil masks with the design\'s foil style, and none without masks', () => {
+    const holo = { ...game, studio: { objects: [], foil: 'glitter' as const } } as MediaItem;
+    expect(buildKit(holo, {}, { front: 'data:image/png;base64,AAAA' }).foil).toEqual({ style: 'glitter', front: 'data:image/png;base64,AAAA' });
+    expect(buildKit(holo, {}).foil).toBeUndefined();
+    expect(buildKit(game, {}, { spineRight: 'data:image/png;base64,BBBB' }).foil?.style).toBe('pastel');
+  });
 });
