@@ -24,3 +24,12 @@ platform. They are trademarks of their respective owners (Sony Interactive Enter
 The PC GamePak sleeve is set in [Exo 2](https://fonts.google.com/specimen/Exo+2) and [Rajdhani](https://fonts.google.com/specimen/Rajdhani),
 bundled through `@fontsource/exo-2` and `@fontsource/rajdhani` under the [SIL Open Font License 1.1](https://openfontlicense.org).
 The PEGI label it draws is the rating system's mark (PEGI S.A.); use it to show a game's real rating.
+
+## Studio
+
+- Icons in the Studio's *Icons* stamps and its toolbar come from [Lucide](https://lucide.dev) (`lucide-static`, [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE)), converted by `npm run gen:stamps`.
+- Platform stamps use Simple Icons paths (see above); the same trademark notes apply.
+- Studio fonts: [Orbitron](https://fonts.google.com/specimen/Orbitron), [Bebas Neue](https://fonts.google.com/specimen/Bebas+Neue), [Anton](https://fonts.google.com/specimen/Anton) and [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P), bundled through `@fontsource`, all under the SIL Open Font License 1.1.
+- The editor uses [Fabric.js](https://fabricjs.com) (MIT) and writes Photoshop files with [ag-psd](https://github.com/Agamnentzar/ag-psd) (MIT).
+- The other stamps (PC GamePak marks, badges, stripes, genre and feature labels, flags) are drawn for CoverForge and released with it.
+- **Local stamps** (`public/local-stamps/`) are your own files: they are never committed or built into the app. Third-party logo sets and official rating labels you put there stay under their owners' terms.

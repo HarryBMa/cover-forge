@@ -204,7 +204,7 @@ export function restoreSession(raw: unknown, defaults: AppState): AppState {
     template: defaults.template,
     selectedPanel: defaults.selectedPanel,
     banner: typeof o.banner === 'boolean' ? o.banner : o.styleOverlay === undefined ? defaults.banner : o.styleOverlay === 'digital',
-    view: o.view === '2d' || o.view === '3d' ? o.view : defaults.view,
+    view: o.view === '2d' || o.view === '3d' || o.view === 'studio' ? o.view : defaults.view,
     shared,
     designs,
   });

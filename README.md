@@ -11,6 +11,12 @@ Browser-based cover art generator for physical media collectors: build a queue o
 - **Editor:** per-panel background, an accent border (colour, width and inset from the trim edge), image, position (from the panel's top-left, centred by default), size, rotation and opacity; brand logos for stores and consoles; QR codes and EAN-13 / UPC-A / Code 128 barcodes; spine text (sized automatically so a long title of about 45 characters fits on one line; override it with the Text height slider, and rotate it, e.g. 180° to read bottom-to-top). Styling lives in **designs**: the built-in *Default* design applies to every item, and you can *Fork* it (or any design) into a named design that only stores what you change, used by the selected item. Each part of a design (background, image, logo, code, spine text) shows a read-only summary until you press *Edit* on it. Edits go to the item's design, so everything using it follows; *This item* edits just that item on top of its design. Designs work on every template.
 - **Branded:** a toggle that draws each template's official banner and spine cap: the platform's trade dress on game cases (PS4, Switch, Xbox…), or the format's mark (Blu-ray, DVD, VHS, CD, cassette, NFC) on the others.
 - **PC GamePak sleeve:** on the cartridge sleeve, Branded draws a classic PC big-box layout: a title logo and tagline over the cover art, a PEGI label and PC badge on the front; colour stripes, a PC badge and the rating on each spine; and on the back a headline, blurb, up to three feature rows (screenshot, logo or title, and a line of text), a features line, a stripe rule and a footer with publisher logos and small print. The words and pictures are per item: edit them under *Sleeve text & pictures*, and use *Add images…* to bring in logos and screenshots of your own. Rows with no text show as a strip of screenshots.
+- **Studio:** a drag-and-drop editor on top of any template (the *Studio* button next to 2D and 3D). Drag from the left onto the cover:
+  - **Layouts:** one-click starting points for the front, back and spine (full-bleed art, art + title, inset, circle, split, screenshot rows and grids, the classic PC GamePak sleeve). Frames are Canva-style: drop a picture (from *Pictures* or straight from your computer) onto a frame and it fills it; double-click a frame to slide and zoom the picture inside, or switch it from *Fill* to *Fit*.
+  - **Stamps:** 130+ vector stickers (PC GamePak logos, seals and spine strips, genre and feature badges, language flags, platform marks, rating badges, icons), searchable and recolourable, plus your own **local stamps** (below).
+  - **Frames, shapes and text:** eight frame shapes, and text presets that fill in the game's title, year, tagline… (`{title}`, `{year}`, `{headline}`…), with outline and glow.
+  - Move, resize, rotate, snap to panel edges, the bleed and other objects; layers with show/hide, lock and drag to reorder; multi-select align; undo/redo; copy and paste; *Use on the other games* to give the rest of the queue the same design with their own pictures and titles.
+- **Photoshop export:** *Export → Photoshop PSD* writes one layered `.psd` per game at 300 PPI: the built-in layout one layer per panel, every Studio object as its own layer (frames as a shape with the picture clipped to it, so you can recrop in Photoshop; text as editable text layers with stroke and glow styles, plus a hidden copy as drawn), and the cut and fold lines as a hidden layer. Install the fonts (Exo 2, Rajdhani, Orbitron, Bebas Neue, Anton, Press Start 2P, all on Google Fonts) to edit the text; Photoshop asks to update text layers on opening.
 - **3D preview:** rotate and zoom a model of the case, box, card or disk with your artwork mapped on.
 - **Export:** 300 DPI PNG/JPEG, PDF or SVG at exact millimetres with vector cut/fold guides, multi-up sheets on A4/Letter, die-cut **Avery** label sheets, and a "Download all" ZIP with each item's flat render and the print sheets (use *Save* if you also want the original source images).
 - **Layout:** both side panels can be drag-resized from their inner edge (double-click it to reset) or collapsed to a slim rail; sizes are remembered per browser.
@@ -46,6 +52,8 @@ npm run lint
 npm test             # Vitest unit tests
 npm run build
 npm run gen:brands   # regenerate src/brands/brands.generated.ts from Simple Icons
+npm run gen:stamps   # regenerate src/studio/stamps.generated.ts (Studio stamps)
+npm run local-stamps # rebuild public/local-stamps/manifest.json (see Local stamps)
 npm run measure:covers  # measure scans/*/*.jpg, write scans-report.md — see below
 ```
 
@@ -97,6 +105,16 @@ The build uses relative asset paths (`base: './'`), so it works under `https://<
 ### Sheet geometry: what is verified
 
 Avery **5371** (business cards) and **5395** (name badges) use published sizes and margins that add up exactly to the page. **5196** (3.5" diskette labels) has published size, count and margins, but its vertical spacing is assumed, and the app says so. Print one page on plain paper and hold it against a real sheet before using labels.
+
+### Local stamps (kept off GitHub)
+
+Logos and labels you may use on your own covers but not redistribute (console and store logo packs, official PEGI/ESRB labels) go in `public/local-stamps/`, which is git-ignored and left out of builds. Subfolders become stamp categories; run `npm run local-stamps` after adding files. A folder kept elsewhere can be linked in (a junction on Windows, a symlink elsewhere):
+
+```sh
+npm run local-stamps -- --link zaparoo ../zaparoo-designer/src/assets   # e.g. the Zaparoo Designer logo set
+```
+
+Files named `pegi/pegi-3.svg` … `pegi/pegi-18.svg` replace the drawn rating badge in the layouts. Local stamps are served by the dev and preview servers only.
 
 ### Trademarks and third-party data
 

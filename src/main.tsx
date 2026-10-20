@@ -10,6 +10,12 @@ import '@fontsource/exo-2/latin-900-italic.css';
 import '@fontsource/rajdhani/latin-500.css';
 import '@fontsource/rajdhani/latin-600.css';
 import '@fontsource/rajdhani/latin-700.css';
+// Studio typefaces (SIL Open Font License).
+import '@fontsource/exo-2/latin-700.css';
+import '@fontsource/orbitron/latin-800.css';
+import '@fontsource/bebas-neue/latin-400.css';
+import '@fontsource/anton/latin-400.css';
+import '@fontsource/press-start-2p/latin-400.css';
 
 async function start() {
   await hydrateLocalImages();

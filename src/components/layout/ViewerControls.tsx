@@ -13,6 +13,9 @@ export function ViewerControls() {
         <button className={view === '3d' ? 'active' : ''} onClick={() => dispatch({ type: 'setView', view: '3d' })}>
           3D
         </button>
+        <button className={view === 'studio' ? 'active' : ''} title="Drag-and-drop stamps, frames and text onto the cover" onClick={() => dispatch({ type: 'setView', view: 'studio' })}>
+          Studio
+        </button>
       </div>
       <label className="check">
         <input type="checkbox" checked={showGuides} onChange={(e) => dispatch({ type: 'setShowGuides', show: e.target.checked })} />
