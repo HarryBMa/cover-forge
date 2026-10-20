@@ -90,7 +90,10 @@ const base = (b: Box, name?: string) => ({ id: newId(), x: b.x, y: b.y, w: b.w, 
 
 export const makeImage = (image: ImageRef, b: Box, name?: string): StudioImage => ({ ...base(b, name), kind: 'image', image });
 
-export const makeStamp = (stamp: string, b: Box, name?: string): StudioStamp => ({ ...base(b, name), kind: 'stamp', stamp, tint: null });
+/** Stamps that start out as holo foil (the holographic sticker). */
+const HOLO_STAMPS = new Set(['gp-holo']);
+
+export const makeStamp = (stamp: string, b: Box, name?: string): StudioStamp => ({ ...base(b, name), kind: 'stamp', stamp, tint: null, ...(HOLO_STAMPS.has(stamp) && { holo: 'light' as const }) });
 
 export const makeFrame = (shape: FrameShape, b: Box, image: ImageRef | null = null, name?: string): StudioFrame => ({
   ...base(b, name),

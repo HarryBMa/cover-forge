@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { templateOf, useAppDispatch, useAppState, useSelectedItem } from '../../context/AppContext';
 import type { ImageRef } from '../../types/editor';
 import type { FrameShape, StudioDoc, StudioFrame, StudioObject, StudioShape, StudioStamp, StudioText } from '../../types/studio';
-import { FRAME_SHAPES, STUDIO_FONTS, type StudioFont } from '../../types/studio';
+import { FOIL_STYLES, FRAME_SHAPES, STUDIO_FONTS, type FoilStyle, type HoloMode, type StudioFont } from '../../types/studio';
 import { libraryImages } from '../../engine/imageLibrary';
 import { srcOf } from '../../storage/localImages';
 import { arrange, duplicateObjects, moveToIndex, objectLabel, removeObjects, studioOf, updateObject, type Arrange } from '../../studio/doc';
@@ -57,6 +57,7 @@ export function StudioInspector() {
               <input type="checkbox" checked={!doc.hideBranded} onChange={(e) => commit({ ...doc, hideBranded: !e.target.checked })} />
               Show the built-in layout underneath
             </label>
+            {doc.objects.some((x) => x.holo) && <FoilStylePick doc={doc} commit={commit} />}
             <div className="button-row">
               {sameTemplate.length > 0 && (
                 <button disabled={!doc.objects.length} title="Copies this design to them; each game fills the frames and {fields} with its own pictures and text" onClick={() => dispatch({ type: 'studioCopyTo', from: item.id, to: sameTemplate.map((i) => i.id) })}>
@@ -147,6 +148,7 @@ function ObjectPanel({ o, doc, commit }: { o: StudioObject; doc: StudioDoc; comm
       </div>
       <NumberSlider label="Rotation" unit="°" min={-180} max={180} step={1} decimals={0} value={o.angle > 180 ? o.angle - 360 : o.angle} onChange={(angle) => set({ angle: (angle + 360) % 360 }, 'angle')} />
       <NumberSlider label="Opacity" unit="%" min={0} max={100} step={1} decimals={0} value={Math.round(o.opacity * 100)} onChange={(v) => set({ opacity: v / 100 }, 'opacity')} />
+      <HoloFields o={o} doc={doc} set={set} commit={commit} />
       <div className="button-row">
         <button aria-pressed={!!o.flipX} onClick={() => set({ flipX: !o.flipX })}>Flip ↔</button>
         <button aria-pressed={!!o.flipY} onClick={() => set({ flipY: !o.flipY })}>Flip ↕</button>
@@ -162,6 +164,50 @@ function ObjectPanel({ o, doc, commit }: { o: StudioObject; doc: StudioDoc; comm
         <input type="text" value={o.name ?? ''} placeholder={objectLabel({ ...o, name: undefined }, item, (id) => getStamp(id)?.name)} onChange={(e) => set({ name: e.target.value || undefined }, 'name')} />
       </label>
     </>
+  );
+}
+
+const HOLO_LABELS: Record<'off' | HoloMode, string> = { off: 'Off', light: 'Light parts', full: 'Whole' };
+
+/** Holo foil on the object: on screen in 3D only (print exports draw it as usual). */
+function HoloFields({ o, doc, set, commit }: { o: StudioObject; doc: StudioDoc; set: Set; commit: Commit }) {
+  const mode = o.holo ?? 'off';
+  return (
+    <>
+      <div className="field">
+        <span>Holo foil (3D view only)</span>
+        <div className="seg" role="group" aria-label="Holo foil">
+          {(['off', 'light', 'full'] as const).map((m) => (
+            <button
+              key={m}
+              aria-pressed={mode === m}
+              className={mode === m ? 'active' : ''}
+              title={m === 'light' ? 'Light parts shine as foil, dark parts stay ink (like printing on holo vinyl)' : m === 'full' ? 'The whole shape is foil' : undefined}
+              onClick={() => set({ holo: m === 'off' ? undefined : m })}
+            >
+              {HOLO_LABELS[m]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {o.holo && <FoilStylePick doc={doc} commit={commit} />}
+    </>
+  );
+}
+
+/** One foil look per design. */
+function FoilStylePick({ doc, commit }: { doc: StudioDoc; commit: Commit }) {
+  return (
+    <label className="field">
+      <span>Foil style (all holo objects)</span>
+      <select value={doc.foil ?? 'pastel'} onChange={(e) => commit({ ...doc, foil: e.target.value as FoilStyle })}>
+        {Object.entries(FOIL_STYLES).map(([k, label]) => (
+          <option key={k} value={k}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

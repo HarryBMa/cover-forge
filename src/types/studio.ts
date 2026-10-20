@@ -41,7 +41,17 @@ interface StudioBase {
   hidden?: boolean;
   /** Shown in the layers list and as the PSD layer name. */
   name?: string;
+  /**
+   * Holographic foil, on screen only (the 3D view and its images; print exports draw the object as usual). 'light': the
+   * object's light parts are foil and its dark parts ink, like printing on holo vinyl; 'full': the whole object is foil.
+   */
+  holo?: HoloMode;
 }
+
+export const HOLO_MODES = ['light', 'full'] as const;
+export type HoloMode = (typeof HOLO_MODES)[number];
+export const FOIL_STYLES = { silver: 'Silver', oil: 'Oil slick', glitter: 'Glitter', pastel: 'Pastel' } as const;
+export type FoilStyle = keyof typeof FOIL_STYLES;
 
 /** A picture from the item's library (its cover, a screenshot, an upload…). */
 export interface StudioImage extends StudioBase {
@@ -114,6 +124,8 @@ export interface StudioDoc {
   objects: StudioObject[];
   /** Leave out the template's built-in Branded layout under the Studio objects (a full Studio design replaces it). */
   hideBranded?: boolean;
+  /** How the holo foil objects shimmer in 3D (default pastel). */
+  foil?: FoilStyle;
 }
 
 export const EMPTY_STUDIO: StudioDoc = { objects: [] };
